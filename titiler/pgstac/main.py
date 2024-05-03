@@ -39,6 +39,7 @@ from titiler.pgstac.factory import (
 )
 from titiler.pgstac.reader import PgSTACReader
 from titiler.pgstac.settings import ApiSettings, PostgresSettings
+from titiler.pgstac.custom import ChangeDetectionVisualize
 
 logging.getLogger("botocore.credentials").disabled = True
 logging.getLogger("botocore.utils").disabled = True
@@ -111,6 +112,12 @@ else:
     optional_headers = []
 
 ###############################################################################
+# Register custom algorithm
+algorithms = AlgorithmFactory()
+algorithms.supported_algorithm = algorithms.supported_algorithm.register({"change_detection_visualize": ChangeDetectionVisualize})
+
+
+###############################################################################
 # STAC Search Endpoints
 searches = MosaicTilerFactory(
     path_dependency=SearchIdParams,
@@ -150,6 +157,7 @@ add_search_list_route(app, prefix="/searches", tags=["STAC Search"])
 # STAC COLLECTION Endpoints
 collection = MosaicTilerFactory(
     path_dependency=CollectionIdParams,
+    process_dependency=algorithms.supported_algorithm.dependency,
     optional_headers=optional_headers,
     router_prefix="/collections/{collection_id}",
     add_statistics=True,
@@ -182,7 +190,6 @@ app.include_router(tms.router, tags=["Tiling Schemes"])
 
 ###############################################################################
 # Algorithms Endpoints
-algorithms = AlgorithmFactory()
 app.include_router(algorithms.router, tags=["Algorithms"])
 
 ###############################################################################
